@@ -1,35 +1,32 @@
 import { ImgModal } from 'components/Modal/ImgModal';
-import { Component } from 'react';
+import { useState } from 'react';
 import { StyledGalleryImg, StyledGalleryItem } from './ImageGalleryItem.styled';
 
-export default class ImageGalleryItem extends Component {
-  state = {
-    selectedImg: null,
+export const ImageGalleryItem = ({ hit }) => {
+  const [selectedImg, setSelectedImg] = useState(null);
+
+  const { webformatURL, tags, largeImageURL } = hit;
+
+  const settleSelectedImg = () => {
+    setSelectedImg(webformatURL);
   };
-  setSelectedImg = () => {
-    this.setState({ selectedImg: this.props.hit.webformatURL });
+  const closeModal = () => {
+    setSelectedImg(null);
   };
-  closeModal = () => {
-    this.setState({ selectedImg: null });
-  };
-  render() {
-    const {
-      hit: { webformatURL, tags, largeImageURL },
-    } = this.props;
-    return (
-      <StyledGalleryItem>
-        <StyledGalleryImg
-          src={webformatURL}
-          alt={tags}
-          onClick={this.setSelectedImg}
-        />
-        <ImgModal
-          isOpen={this.state.selectedImg !== null}
-          largeImageURL={largeImageURL}
-          tags={tags}
-          closeModal={this.closeModal}
-        />
-      </StyledGalleryItem>
-    );
-  }
-}
+
+  return (
+    <StyledGalleryItem>
+      <StyledGalleryImg
+        src={webformatURL}
+        alt={tags}
+        onClick={settleSelectedImg}
+      />
+      <ImgModal
+        isOpen={selectedImg !== null}
+        largeImageURL={largeImageURL}
+        tags={tags}
+        closeModal={closeModal}
+      />
+    </StyledGalleryItem>
+  );
+};
