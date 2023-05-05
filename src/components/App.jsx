@@ -1,5 +1,5 @@
 import { Searchbar } from './Searchbar/Searchbar';
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchImg } from 'api';
 import { Button } from './Button/Button';
 import { Loader } from './Loader/Loader';
@@ -9,78 +9,65 @@ import { StyledLayout } from './Layout/Layout.styled';
 
 const ERROR_MSG = 'Something went wrong, try again';
 
-export class App extends Component {
-  state = {
-    image: '',
-    page: 1,
-    hits: null,
-    error: null,
-    total: null,
-    loading: false,
-  };
+export const App = () => {
+  const [image, setImage] = useState('');
+  const [page, setPage] = useState(1);
+  const [hitsImg, setHitsImg] = useState(null);
+  const [error, setError] = useState(null);
+  const [total, setTotal] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  async componentDidUpdate(prevProps, prevState) {
-    const { image, page } = this.state;
-    if (prevState.image !== this.state.image) {
+  useEffect(() => {
+    if (image === '') {
+      return;
+    }
+    async function getImages() {
       try {
-        this.setState({ loading: true, hits: null });
-        const { hits, totalHits } = await fetchImg(image, page);
-        this.setState({ hits: hits, total: totalHits });
+        if (page === 1) {
+          setLoading(true);
+          setHitsImg(null);
+          const { hits, totalHits } = await fetchImg(image, page);
+          setHitsImg(hits);
+          setTotal(totalHits);
+        } else {
+          setLoading(true);
+          const { hits } = await fetchImg(image, page);
+          setHitsImg(prevState => [...prevState, ...hits]);
+        }
       } catch (error) {
-        this.setState({ error: ERROR_MSG });
+        setError(ERROR_MSG);
       } finally {
-        this.setState({ loading: false });
+        setLoading(false);
       }
     }
-    if (prevState.page !== this.state.page && this.state.page > 1) {
-      try {
-        this.setState({ loading: true });
-        const { hits } = await fetchImg(image, page);
-        this.setState({ hits: [...this.state.hits, ...hits] });
-      } catch (error) {
-        this.setState({ error: ERROR_MSG });
-      } finally {
-        this.setState({ loading: false });
-      }
-    }
-  }
+    getImages();
+  }, [image, page]);
 
-  handleFormSubmit = imgName => {
-    this.setState({ image: imgName });
+  const handleFormSubmit = imgName => {
+    setImage(imgName);
   };
-  loadMoreImg = () => {
-    this.setState({ page: this.state.page + 1 });
-    if (
-      this.state.hits !== null &&
-      this.state.hits.length === this.state.total
-    ) {
+  const loadMoreImg = () => {
+    setPage(prevPage => prevPage + 1);
+    if (hitsImg !== null && hitsImg.length === total) {
       toast("We're sorry, but you've reached the end of search results.");
     }
   };
-  getHits = hits => {
-    this.setState({ hits: hits });
-  };
-  resetPage = () => {
-    this.setState({ page: 1 });
+
+  const resetPage = () => {
+    setPage(1);
   };
 
-  render() {
-    const { error, hits, total } = this.state;
-    return (
-      <StyledLayout>
-        <Searchbar
-          onSubmit={this.handleFormSubmit}
-          resetPage={this.resetPage}
-        />
-        {error && <div>{error}</div>}
-        {hits !== null && <ImageGallery hits={hits} />}
+  return (
+    <StyledLayout>
+      <Searchbar onSubmit={handleFormSubmit} resetPage={resetPage} />
+      {error && <div>{error}</div>}
+      {hitsImg !== null && <ImageGallery hits={hitsImg} />}
 
-        {hits !== null && hits.length <= total && (
-          <Button loadImg={this.loadMoreImg} />
-        )}
-        <Toaster />
-        {this.state.loading && <Loader />}
-      </StyledLayout>
-    );
-  }
-}
+      {hitsImg !== null && hitsImg.length <= total && (
+        <Button loadImg={loadMoreImg} />
+      )}
+      <Toaster />
+      {loading && <Loader />}
+    </StyledLayout>
+  );
+};
